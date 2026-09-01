@@ -27,7 +27,7 @@ def short(value):
 
 
 def parse(name):
-    with open(os.path.join(BASE_DIR, name), encoding="utf-8-sig") as source:
+    with open(os.path.join(BASE_DIR, "metas", name), encoding="utf-8-sig") as source:
         text = source.read()
     try:
         return ET.fromstring(text)
@@ -37,7 +37,7 @@ def parse(name):
 
 
 def parse_optional(name):
-    path = os.path.join(BASE_DIR, name)
+    path = os.path.join(BASE_DIR, "metas", name)
     if not os.path.exists(path):
         return None
     return parse(name)
@@ -52,8 +52,6 @@ def normalized_id(value):
 
 def load_armor_health():
     root = parse_optional("armors.xml")
-    if root is None:
-        root = parse_optional(os.path.join("metas", "armors.xml"))
     if root is None:
         return {}
     armors = {}
@@ -705,11 +703,6 @@ def convert():
     enums = load_enums(almanac_root)
     all_entities = load_entities(entities_root, load_templates(entities_root))
     almanac = load_almanac(almanac_root)
-
-    # Reuse the generic entry parser for enemies so new XML entries, tags, and
-    # properties do not require per-enemy mappings. Entries without a named
-    # entity are deferred because these two source files are insufficient to
-    # produce a reliable Wiki entry for them.
     enemy_root = ET.fromstring(ET.tostring(almanac_root, encoding="unicode"))
     contraptions_section = enemy_root.find("contraptions")
     enemies_section = enemy_root.find("enemies")

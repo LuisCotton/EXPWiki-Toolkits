@@ -39,7 +39,7 @@ local function terrainText(terrain)
         end
         if terrain.excludedTags then
             if terrain.excludedTags == 'day' then
-                table.insert(result, '不会在白天出现')
+                table.insert(result, '白天不生成')
             else
                 table.insert(result, '排除标签：' .. terrain.excludedTags)
             end

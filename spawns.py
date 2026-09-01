@@ -2,8 +2,6 @@ import json
 import os
 import xml.etree.ElementTree as ET
 
-import login
-
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NS = "mvz2:"
@@ -37,7 +35,7 @@ def child_attrs(entry, name):
 
 
 def parse_xml(name):
-    with open(os.path.join(BASE_DIR, name), encoding="utf-8-sig") as source:
+    with open(os.path.join(BASE_DIR, "metas", name), encoding="utf-8-sig") as source:
         return ET.fromstring(source.read())
 
 
@@ -46,7 +44,7 @@ def normalized_id(value):
 
 
 def load_entity_names():
-    path = os.path.join(BASE_DIR, "entities.xml")
+    path = os.path.join(BASE_DIR, "metas", "entities.xml")
     if not os.path.exists(path):
         return {}
     root = parse_xml("entities.xml")
@@ -75,7 +73,7 @@ def entity_extra(entry):
 
 
 def convert():
-    source_path = os.path.join(BASE_DIR, "spawns.xml")
+    source_path = os.path.join(BASE_DIR, "metas", "spawns.xml")
     root = ET.parse(source_path).getroot()
     entity_names = load_entity_names()
     entries = []
@@ -119,25 +117,3 @@ def convert():
 
     return json.dumps(entries, ensure_ascii=False, separators=(",", ":"))
 
-
-def main(upload=True):
-    try:
-        text = convert()
-    except Exception as error:
-        print(f"上传失败：{error}")
-        return False
-
-    if not upload:
-        return True
-
-    try:
-        login.upload_text(WIKI_JSON_TITLE, text, "via spawns.py")
-        print(f"上传成功：{WIKI_JSON_TITLE}")
-        return True
-    except Exception as error:
-        print(f"上传失败：{error}")
-        return False
-
-
-if __name__ == "__main__":
-    main()
