@@ -573,6 +573,8 @@ def make_tags(item, tag_definitions=None, enums=None):
         add(tag_kind(tag_id), value)
 
     mass = short(str(values.get("mvz2:mass", "")))
+    if item.get("type") == "enemy" and not mass:
+        mass = "0"
     if mass:
         add("mass", enum_value("mass", mass), 2500)
     category = short(values.get("mvz2:Category", ""))

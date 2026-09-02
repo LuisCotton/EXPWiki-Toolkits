@@ -72,30 +72,70 @@ local function icon(item, page)
     return '{{' .. template .. '|' .. (item.name or page or '') .. '|text=1}}'
 end
 
-local function params(item, page)
+local function nonEmpty(value)
+    return value ~= nil and value ~= ''
+end
+
+local function override(frame, name, aliases)
+    if nonEmpty(frame.args[name]) then
+        return frame.args[name]
+    end
+    for _, alias in ipairs(aliases or {}) do
+        if nonEmpty(frame.args[alias]) then
+            return frame.args[alias]
+        end
+    end
+    return nil
+end
+
+local function hasMassTag(tags)
+    for _, tag in ipairs(tags or {}) do
+        if tag[1] == 'mass' or tag[1] == '质量' then
+            return true
+        end
+    end
+    return false
+end
+
+local function params(frame, item, page)
     local result = {
-        ' | name = ' .. (item.name or page or ''),
-        ' | icon = ' .. icon(item, page),
+        ' | name = ' .. (override(frame, 'name', { '名称' }) or item.name or page or ''),
+        ' | icon = ' .. (override(frame, 'icon', { '图标名' }) or icon(item, page)),
     }
-    if isMutantEnemy(item) then
-        table.insert(result, ' | image size = 125')
+    local imageSize = override(frame, 'image size', { '图片大小' })
+    if imageSize or isMutantEnemy(item) then
+        table.insert(result, ' | image size = ' .. (imageSize or '125'))
     end
-    table.insert(result, ' | desc = ' .. join(item.header, '<br>'))
-    table.insert(result, ' | properties = ' .. join(item.properties, '', '<br>'))
-    table.insert(result, ' | flavor = ' .. flavor(item.flavor))
-    if item.cost and item.cost ~= '' then
-        table.insert(result, ' | cost = ' .. item.cost)
+    table.insert(result, ' | desc = ' .. (override(frame, 'desc', { '主描述' }) or join(item.header, '<br>')))
+    table.insert(result, ' | properties = ' .. (override(frame, 'properties', { '属性' }) or join(item.properties, '', '<br>')))
+    table.insert(result, ' | flavor = ' .. (override(frame, 'flavor', { '描述' }) or flavor(item.flavor)))
+    local cost = override(frame, 'cost', { '花费' }) or item.cost
+    if cost and cost ~= '' then
+        table.insert(result, ' | cost = ' .. cost)
     end
-    if item.recharge and item.recharge ~= '' then
-        table.insert(result, ' | recharge = ' .. item.recharge)
+    local recharge = override(frame, 'recharge', { '冷却时间', '充能时间' }) or item.recharge
+    if recharge and recharge ~= '' then
+        table.insert(result, ' | recharge = ' .. recharge)
     end
-    for index, tag in ipairs(item.tags or {}) do
+    local tags = item.tags or {}
+    local addDefaultMass = item.type == 'enemy' and not hasMassTag(tags)
+    local tagCount = math.max(#tags + (addDefaultMass and 1 or 0), 15)
+    for index = 1, tagCount do
         if index > 15 then break end
-        table.insert(result, string.format(
-            ' | tag%d = {{Tag|%s|%s|text=no}}', index, tag[1] or '', tag[2] or ''
-        ))
+        local tag = tags[index]
+        local explicit = override(frame, 'tag' .. index, { '标签' .. index })
+        if explicit ~= nil then
+            table.insert(result, ' | tag' .. index .. ' = ' .. explicit)
+        elseif tag then
+            table.insert(result, string.format(
+                ' | tag%d = {{Tag|%s|%s|text=no}}', index, tag[1] or '', tag[2] or ''
+            ))
+        elseif addDefaultMass and index == #tags + 1 then
+            table.insert(result, ' | tag' .. index .. ' = {{Tag|mass|中|text=no}}')
+        end
     end
-    table.insert(result, ' | new = yes')
+    local newValue = override(frame, 'new', { '新' })
+    table.insert(result, ' | new = ' .. (newValue or 'yes'))
     return table.concat(result, '\n')
 end
 
@@ -118,7 +158,7 @@ function p.getAlmanac(frame)
     if not item then
         return '错误：在 [[Almanac.json]] 中未找到「' .. key .. '」的数据'
     end
-    return frame:preprocess('{{Almanac\n' .. params(item, key) .. '\n}}')
+    return frame:preprocess('{{Almanac\n' .. params(frame, item, key) .. '\n}}')
 end
 
 return p

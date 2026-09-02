@@ -22,7 +22,7 @@ def is_converter_script(path: Path) -> bool:
         text = path.read_text(encoding="utf-8-sig")
     except UnicodeDecodeError:
         text = path.read_text(encoding="gb18030", errors="ignore")
-    return "WIKI_JSON_TITLE" in text and "def convert" in text
+    return ("WIKI_JSON_TITLE" in text or "WIKI_TITLE" in text) and "def convert" in text
 
 
 def discover_scripts():
@@ -42,7 +42,7 @@ def load_module(path: Path):
 
 def run_script(path: Path):
     module = load_module(path)
-    title = getattr(module, "WIKI_JSON_TITLE", "未知 JSON 页面")
+    title = getattr(module, "WIKI_JSON_TITLE", None) or getattr(module, "WIKI_TITLE", "未知 JSON 页面")
     convert = getattr(module, "convert", None)
     if not callable(convert):
         raise RuntimeError(f"{path.name} 没有可调用的 convert 函数")
@@ -65,7 +65,7 @@ def main():
 
     if not scripts:
         print("没有发现可运行的上传脚本。")
-        print("脚本需要定义 WIKI_JSON_TITLE 和 convert()。")
+        print("脚本需要定义 WIKI_JSON_TITLE 或 WIKI_TITLE，以及 convert()。")
         return 1
 
     print("将运行以下脚本：")
