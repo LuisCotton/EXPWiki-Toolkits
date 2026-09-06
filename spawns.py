@@ -6,6 +6,9 @@ import xml.etree.ElementTree as ET
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NS = "mvz2:"
 WIKI_JSON_TITLE = "Spawns.json"
+SPECIAL_NAMES = {
+    "undead_flying_object_blitz": "不死飞行物（飞碟闪电战）",
+}
 
 
 def short(value):
@@ -48,9 +51,8 @@ def load_entity_names():
     if not os.path.exists(path):
         return {}
     root = parse_xml("entities.xml")
-    section = root.find("entries")
     names = {}
-    for entry in (list(section) if section is not None else []):
+    for entry in root.findall(".//*[@id]"):
         item_id = short(entry.get("id", ""))
         name = entry.get("name")
         if not item_id or not name:
@@ -84,14 +86,14 @@ def convert():
         terrain = child_attrs(entry, "terrain")
         weight = child_attrs(entry, "weight")
         eid = entity_id(entry)
+        entry_id = entry.get("id")
+        name = entity_names.get(eid) or entity_names.get(normalized_id(eid)) or entry_id
+        if entry_id in SPECIAL_NAMES:
+            name = SPECIAL_NAMES[entry_id]
         record = compact_dict({
-            "id": entry.get("id"),
+            "id": entry_id,
             "entity": eid,
-            "name": (
-                entity_names.get(eid)
-                or entity_names.get(normalized_id(eid))
-                or entry.get("id")
-            ),
+            "name": name,
             "type": entry.get("type"),
             "noEndless": bool_value(entry.get("noEndless")) or None,
             "entityArgs": entity_extra(entry),
