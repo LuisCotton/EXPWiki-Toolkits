@@ -85,22 +85,41 @@ def armor_value_ids(value):
 
 
 def armor_properties(values, armor_health):
+    """汇总实体身上护具的血量，输出 armor_hp / shield_hp / ARMOR。
+
+    注意：values 是经过 add_case_aliases 处理过的，同一个属性会出现大小写多种写法
+    （如 mvz2:starting_armor / mvz2:STARTING_ARMOR / MVZ2:STARTING_ARMOR），
+    而 armor_value_ids 对同一个护甲也会给出带前缀和不带前缀两种写法。
+    因此这里必须按「规范化后的属性名」和「规范化后的护甲 id」双重去重，
+    否则同一件护甲会被反复累加（普通怪物会正好放大 6 倍）。
+    """
     if not armor_health:
         return {}
     armor_key_words = ("armor", "armour", "helmet", "helm", "shield", "hat", "cap", "crown")
     totals = {"armor_hp": 0.0, "shield_hp": 0.0}
+    counted = {"armor_hp": set(), "shield_hp": set()}
+    seen_keys = set()
     found = False
     for name, value in values.items():
         key = normalized_id(name)
-        should_check = any(word in key for word in armor_key_words)
+        if key in seen_keys:
+            # 同一属性的大小写别名，已经算过，跳过以免重复累加。
+            continue
         candidate_ids = armor_value_ids(value)
+        should_check = any(word in key for word in armor_key_words)
         if not should_check and not any(normalized_id(armor_id) in armor_health for armor_id in candidate_ids):
             continue
+        seen_keys.add(key)
         slot = "shield_hp" if "shield" in key else "armor_hp"
         for armor_id in candidate_ids:
-            health = armor_health.get(normalized_id(armor_id))
+            normalized = normalized_id(armor_id)
+            if normalized in counted[slot]:
+                # 同一件护甲（含带前缀/不带前缀两种写法）只累加一次。
+                continue
+            health = armor_health.get(normalized)
             if health is None:
                 continue
+            counted[slot].add(normalized)
             try:
                 totals[slot] += float(health)
             except ValueError:
