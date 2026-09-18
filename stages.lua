@@ -1,10 +1,11 @@
 local p = {}
 
-local dataCache
+local rootCache
+local lookupCache
 
-local function loadData()
-    if dataCache then
-        return dataCache
+local function loadRoot()
+    if rootCache then
+        return rootCache
     end
     local ok, data = pcall(mw.loadJsonData, 'Stages.json')
     if not ok or type(data) ~= 'table' then
@@ -17,8 +18,20 @@ local function loadData()
             return nil
         end
     end
-    dataCache = data.entries or data
-    return dataCache
+    rootCache = data
+    return rootCache
+end
+
+local function loadStages()
+    local data = loadRoot()
+    if not data then return nil end
+    return data.entries or data
+end
+
+local function loadMonsters()
+    local data = loadRoot()
+    if not data or type(data.monsters) ~= 'table' then return nil end
+    return data.monsters
 end
 
 local function keyOf(frame)
@@ -68,25 +81,171 @@ local function stageText(stage)
     return table.concat(result, '\n')
 end
 
-function p.getStages(frame)
-    local data = loadData()
+local function stageResult(frame, key)
+    local data = loadStages()
     if not data then
         return '错误：无法加载 [[Stages.json]]'
     end
-
-    local key = keyOf(frame)
-    if not key or key == '' then
-        return '错误：请提供关卡名或ID。'
-    end
-
     for _, stage in ipairs(data) do
         if matchStage(stage, key) then
             return frame:preprocess(stageText(stage))
         end
     end
-    return '没有找到「' .. key .. '」对应的关卡。'
+    return nil
 end
 
-p.getStage = p.getStages
+local function trim(value)
+    return mw.text.trim(tostring(value or ''))
+end
+
+local function mergeMonster(groups, monster, key)
+    local group = groups[key]
+    if not group then
+        group = { categories = {}, order = {} }
+        groups[key] = group
+    end
+    for _, category in ipairs(monster.stagesByCategory or {}) do
+        local slot = group.categories[category.category]
+        if not slot then
+            slot = {
+                category = category.category,
+                chapter = category.chapter,
+                stages = {},
+                seen = {},
+            }
+            group.categories[category.category] = slot
+            table.insert(group.order, category.category)
+        end
+        for _, stage in ipairs(category.stages or {}) do
+            if stage.link and not slot.seen[stage.link] then
+                slot.seen[stage.link] = true
+                table.insert(slot.stages, stage)
+            end
+        end
+    end
+end
+
+local function addLookupKey(keys, key)
+    if type(key) == 'string' and key ~= '' then
+        keys[key] = true
+        keys[key:lower()] = true
+    end
+end
+
+local function loadMonsterLookup()
+    if lookupCache then return lookupCache end
+    local monsters = loadMonsters()
+    if not monsters then return nil end
+    local groups = {}
+    for _, monster in ipairs(monsters) do
+        local keys = {}
+        addLookupKey(keys, monster.name)
+        addLookupKey(keys, monster.id)
+        for key in pairs(keys) do
+            mergeMonster(groups, monster, key)
+        end
+    end
+    lookupCache = groups
+    return lookupCache
+end
+
+local function enemyHeading(group)
+    if group.chapter then
+        return "'''" .. group.category .. "'''："
+    end
+    return "<br>'''" .. group.category .. "'''："
+end
+
+local function enemyGroupText(group)
+    local links = {}
+    for _, stage in ipairs(group.stages) do
+        table.insert(links, '[[' .. stage.link .. ']]')
+    end
+    return enemyHeading(group) .. table.concat(links, '、')
+end
+
+local function enemyText(monster)
+    local result = {}
+    for _, name in ipairs(monster.order) do
+        local group = monster.categories[name]
+        if #group.stages > 0 then
+            table.insert(result, enemyGroupText(group))
+        end
+    end
+    if #result == 0 then return nil end
+    return table.concat(result, '\n')
+end
+
+local function enemyResult(key)
+    local lookup = loadMonsterLookup()
+    if not lookup then
+        return '错误：无法从 [[Stages.json]] 加载怪物登场数据。'
+    end
+    local monster = lookup[key] or lookup[key:lower()]
+    if not monster then
+        return nil
+    end
+    local text = enemyText(monster)
+    if not text then
+        return '「' .. key .. '」没有可列出的登场关卡。'
+    end
+    return text
+end
+
+local function compactEnemyGroupText(group)
+    local links = {}
+    for _, stage in ipairs(group.stages or {}) do
+        table.insert(links, '[[' .. stage.link .. ']]')
+    end
+    return "'''" .. group.category .. "'''：" .. table.concat(links, '<br>')
+end
+
+local function allEnemyTable(monsters)
+    local result = {
+        '{| class="wikitable sortable"',
+        '|-',
+        '! 怪物 !! 登场关卡数 !! 登场关卡',
+    }
+    for _, monster in ipairs(monsters) do
+        local cells = {}
+        for _, category in ipairs(monster.stagesByCategory or {}) do
+            if #(category.stages or {}) > 0 then
+                table.insert(cells, compactEnemyGroupText(category))
+            end
+        end
+        table.insert(result, '|-')
+        table.insert(result, string.format(
+            '| [[%s]] || %s || %s',
+            monster.name,
+            tostring(monster.stageCount or 0),
+            table.concat(cells, '<br>')
+        ))
+    end
+    table.insert(result, '|}')
+    return table.concat(result, '\n')
+end
+
+local function allEnemyResult()
+    local monsters = loadMonsters()
+    if not monsters then
+        return '错误：无法从 [[Stages.json]] 加载怪物登场数据。'
+    end
+    return allEnemyTable(monsters)
+end
+
+function p.getStages(frame)
+    local key = trim(keyOf(frame))
+    if key == '' then
+        return '错误：请提供关卡名、关卡ID、怪物名或怪物ID。'
+    end
+    if key == '怪物' or key == '总表' or key == 'all' then
+        return allEnemyResult()
+    end
+    local result = stageResult(frame, key)
+    if result then return result end
+    result = enemyResult(key)
+    if result then return result end
+    return '没有找到「' .. key .. '」对应的关卡或怪物。'
+end
 
 return p
