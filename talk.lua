@@ -5,7 +5,7 @@ local templateName = '简单对话_TEST'
 
 local chapterPages = {
     ['序章/剧情'] = 'prologue',
-    ['万圣夜/剧情'] = 'halloween',
+    ['永夜沼泽/剧情'] = 'halloween',
     ['梦境世界/剧情'] = 'dream',
     ['辉针城/剧情'] = 'castle',
     ['梦殿大祀庙/剧情'] = 'mausoleum',
@@ -66,6 +66,16 @@ local function bgmEvent(text)
     return string.format('{{%s|style=6|%s}}', templateName, escapeTemplateText(text))
 end
 
+local function bgmName(value)
+    local name = trim(value)
+    local previous
+    repeat
+        previous = name
+        name = trim(name:gsub('^[Bb][Gg][Mm]%s*[：:]%s*', ''))
+    until name == previous
+    return name
+end
+
 local function sectionTag(kind, name)
     local label = trim(name)
     label = label:gsub('&', '&amp;')
@@ -115,8 +125,9 @@ local function renderGroup(group, showTitle)
         table.insert(result, '== ' .. name .. ' ==')
     end
     table.insert(result, sectionTag('begin', name))
-    if trim(group.music) ~= '' then
-        table.insert(result, bgmEvent('BGM：' .. trim(group.music) .. ''))
+    local music = bgmName(group.music)
+    if music ~= '' then
+        table.insert(result, bgmEvent('BGM：' .. music))
     end
     for _, section in ipairs(group.sections or {}) do
         local text = renderSection(section)

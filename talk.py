@@ -15,7 +15,7 @@ WIKI_JSON_TITLE = "Talk.json"
 
 CHAPTERS = {
     "prologue": "序章",
-    "halloween": "万圣夜",
+    "halloween": "永夜沼泽",
     "dream": "梦境世界",
     "castle": "辉针城",
     "mausoleum": "梦殿大祀庙",
@@ -58,7 +58,7 @@ def load_music_names():
     root = read_xml(MUSICS_PATH)
     names = {}
     for music in root.findall("music"):
-        name = music.get("name", "").strip()
+        name = re.sub(r"^(?:BGM\s*[：:]\s*)+", "", music.get("name", "").strip(), flags=re.I)
         if not name:
             continue
 
