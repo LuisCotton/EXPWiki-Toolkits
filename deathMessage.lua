@@ -47,11 +47,11 @@ function p.getDeathMessage(frame)
 
     local query = mw.text.trim(tostring(frame.args[1] or ''))
     if query == '' then
-        return ''
+        return "''无''"
     end
 
     local message = data[query] or data[query:lower()]
-    return message and formatMessage(message) or ''
+    return message and formatMessage(message) or "''无''"
 end
 
 return p
