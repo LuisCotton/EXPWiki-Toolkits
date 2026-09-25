@@ -9,8 +9,16 @@ NS = "mvz2:"
 WIKI_JSON_TITLE = "Stages.json"
 
 CHAPTER_NAMES = {
-    1: "万圣夜", 2: "梦境世界", 3: "辉针城",
+    1: "永夜沼泽", 2: "梦境世界", 3: "辉针城",
     4: "梦殿大祀庙", 5: "圣辇船", 6: "地灵殿",
+}
+WORLD_CHAPTERS = {
+    "万圣夜": "永夜沼泽",
+    "梦境世界": "梦境世界",
+    "辉针城": "辉针城",
+    "梦殿大祀庙": "梦殿大祀庙",
+    "圣辇船": "圣辇船",
+    "地灵殿": "地灵殿",
 }
 EXTRA_CHAPTERS = {"序章": "序章"}
 MODE_NAMES = {
@@ -134,79 +142,69 @@ def stage_records(stages, entity_names, display_names):
 
 
 def category_of(stage, world_numbers):
-    name = stage.get("name") or ""
-    if stage.get("dayNumber") not in (None, ""):
-        number = world_numbers.get(name)
-        return CHAPTER_NAMES.get(number, name), True, number or 8999
+    name = stage.get("name", "")
+    if stage.get("dayNumber") is not None:
+        number = world_numbers.get(name, 8999)
+        return WORLD_CHAPTERS.get(name, CHAPTER_NAMES.get(number, name)), number
     if name in EXTRA_CHAPTERS:
-        return EXTRA_CHAPTERS[name], True, 0
+        return EXTRA_CHAPTERS[name], 0
     stage_type = stage.get("type")
     if stage_type in MODE_NAMES:
-        return MODE_NAMES[stage_type], False, MODE_ORDER[stage_type]
-    return None, False, 9999
+        return MODE_NAMES[stage_type], MODE_ORDER[stage_type]
+    return None, 9999
 
 
-def stage_link(stage, display_names):
-    stage_id = stage.get("id", "")
-    if stage.get("dayNumber") not in (None, ""):
-        return display_names.get(stage_id)
-    return clean_wiki_name(stage.get("name") or display_names.get(stage_id) or stage_id)
+def stage_link(stage):
+    if stage.get("dayNumber") is not None:
+        return stage.get("displayName")
+    return clean_wiki_name(stage.get("name") or stage.get("displayName") or stage.get("id", ""))
 
 
-def monster_name(entity_id, entity_names):
-    return (
-        entity_names.get(entity_id)
-        or entity_names.get(entity_id.lower())
-        or NAME_ALIASES.get(entity_id)
-        or SPECIAL_NO_ICON_SPAWNS.get(entity_id)
-        or entity_id
-    )
-
-
-def monster_records(stages, entity_names, display_names, world_numbers):
-    positions = {stage.get("id"): index for index, stage in enumerate(stages)}
+def monster_records(stages, world_numbers):
     index = {}
-    for stage in stages:
+    for position, stage in enumerate(stages):
         stage_id = stage.get("id")
         if stage_id in EXCLUDED_STAGE_IDS:
             continue
-        spawns = stage.find("spawns")
-        if spawns is None:
-            continue
-        category, is_chapter, order = category_of(stage, world_numbers)
-        link = stage_link(stage, display_names)
+        category, order = category_of(stage, world_numbers)
+        link = stage_link(stage)
         if category is None or not link:
             continue
-        for spawn in spawns.findall("spawn"):
-            entity_id = short((spawn.get("id") or "").strip())
+        for spawn in stage.get("spawns", []):
+            entity_id = spawn.get("id", "")
             if not entity_id:
                 continue
-            groups = index.setdefault(entity_id, {})
+            name = spawn.get("name") or entity_id
+            monster = index.setdefault(name, {
+                "name": name,
+                "ids": set(),
+                "groups": {},
+            })
+            monster["ids"].add(entity_id)
+            groups = monster["groups"]
             group = groups.setdefault(category, {
                 "category": category,
-                "chapter": is_chapter,
                 "order": order,
                 "stages": {},
             })
             group["stages"].setdefault(stage_id, {
-                "link": link, "id": stage_id,
+                "link": link,
+                "position": position,
             })
 
     monsters = []
-    for entity_id, groups in index.items():
+    for monster in index.values():
         categories = []
-        for group in sorted(groups.values(), key=lambda item: (item["order"], item["category"])):
+        for group in sorted(monster["groups"].values(), key=lambda item: (item["order"], item["category"])):
             stage_list = sorted(
                 group["stages"].values(),
-                key=lambda item: positions.get(item["id"], 9999),
+                key=lambda item: item["position"],
             )
             categories.append({
                 "category": group["category"],
-                "chapter": group["chapter"],
                 "stages": [{"link": stage["link"]} for stage in stage_list],
             })
-        name = monster_name(entity_id, entity_names)
-        record = {"id": entity_id, "name": name}
+        record = {"ids": sorted(monster["ids"]), "name": monster["name"]}
         record["stageCount"] = sum(len(group["stages"]) for group in categories)
         record["stagesByCategory"] = categories
         monsters.append(record)
@@ -218,9 +216,10 @@ def convert():
     stages = parse_xml("stages.xml").findall("stage")
     entity_names = load_entity_names()
     display_names, world_numbers = stage_display_names(stages)
+    entries = stage_records(stages, entity_names, display_names)
     return json.dumps({
-        "entries": stage_records(stages, entity_names, display_names),
-        "monsters": monster_records(stages, entity_names, display_names, world_numbers),
+        "entries": entries,
+        "monsters": monster_records(entries, world_numbers),
     }, ensure_ascii=False, separators=(",", ":"))
 
 

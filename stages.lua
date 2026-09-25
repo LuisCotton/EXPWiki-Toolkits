@@ -98,37 +98,10 @@ local function trim(value)
     return mw.text.trim(tostring(value or ''))
 end
 
-local function mergeMonster(groups, monster, key)
-    local group = groups[key]
-    if not group then
-        group = { categories = {}, order = {} }
-        groups[key] = group
-    end
-    for _, category in ipairs(monster.stagesByCategory or {}) do
-        local slot = group.categories[category.category]
-        if not slot then
-            slot = {
-                category = category.category,
-                chapter = category.chapter,
-                stages = {},
-                seen = {},
-            }
-            group.categories[category.category] = slot
-            table.insert(group.order, category.category)
-        end
-        for _, stage in ipairs(category.stages or {}) do
-            if stage.link and not slot.seen[stage.link] then
-                slot.seen[stage.link] = true
-                table.insert(slot.stages, stage)
-            end
-        end
-    end
-end
-
-local function addLookupKey(keys, key)
+local function addLookupKey(lookup, key, monster)
     if type(key) == 'string' and key ~= '' then
-        keys[key] = true
-        keys[key:lower()] = true
+        lookup[key] = monster
+        lookup[key:lower()] = monster
     end
 end
 
@@ -136,39 +109,29 @@ local function loadMonsterLookup()
     if lookupCache then return lookupCache end
     local monsters = loadMonsters()
     if not monsters then return nil end
-    local groups = {}
+    local lookup = {}
     for _, monster in ipairs(monsters) do
-        local keys = {}
-        addLookupKey(keys, monster.name)
-        addLookupKey(keys, monster.id)
-        for key in pairs(keys) do
-            mergeMonster(groups, monster, key)
+        addLookupKey(lookup, monster.name, monster)
+        for _, id in ipairs(monster.ids or {}) do
+            addLookupKey(lookup, id, monster)
         end
     end
-    lookupCache = groups
+    lookupCache = lookup
     return lookupCache
-end
-
-local function enemyHeading(group)
-    if group.chapter then
-        return "'''" .. group.category .. "'''："
-    end
-    return "<br>'''" .. group.category .. "'''："
 end
 
 local function enemyGroupText(group)
     local links = {}
-    for _, stage in ipairs(group.stages) do
+    for _, stage in ipairs(group.stages or {}) do
         table.insert(links, '[[' .. stage.link .. ']]')
     end
-    return enemyHeading(group) .. table.concat(links, '、')
+    return "'''" .. group.category .. "'''：" .. table.concat(links, '、')
 end
 
 local function enemyText(monster)
     local result = {}
-    for _, name in ipairs(monster.order) do
-        local group = monster.categories[name]
-        if #group.stages > 0 then
+    for _, group in ipairs(monster.stagesByCategory or {}) do
+        if #(group.stages or {}) > 0 then
             table.insert(result, enemyGroupText(group))
         end
     end
