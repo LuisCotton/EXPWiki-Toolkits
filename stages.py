@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NS = "mvz2:"
-WIKI_JSON_TITLE = "Stages.json"
+WIKI_JSON_TITLE = "Module:Stages.json"
 
 CHAPTER_NAMES = {
     1: "永夜沼泽", 2: "梦境世界", 3: "辉针城",

@@ -5,7 +5,7 @@ local function loadData()
     if cache then
         return cache
     end
-    local title = mw.title.new('Almanac.json')
+    local title = mw.title.new('Module:Almanac.json')
     if not title or not title.exists then
         return nil
     end
@@ -142,7 +142,7 @@ end
 function p.getAlmanac(frame)
     local data = loadData()
     if not data then
-        return '错误：无法加载 [[Almanac.json]]'
+        return '错误：无法加载 [[Module:Almanac.json]]'
     end
     local key = frame.args[1]
     if not key or key == '' then
@@ -156,7 +156,7 @@ function p.getAlmanac(frame)
     end
     local item = data[key] or data[key:lower()]
     if not item then
-        return '错误：在 [[Almanac.json]] 中未找到「' .. key .. '」的数据'
+        return '错误：在 [[Module:Almanac.json]] 中未找到「' .. key .. '」的数据'
     end
     return frame:preprocess('{{Almanac\n' .. params(frame, item, key) .. '\n}}')
 end

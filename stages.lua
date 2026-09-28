@@ -7,9 +7,9 @@ local function loadRoot()
     if rootCache then
         return rootCache
     end
-    local ok, data = pcall(mw.loadJsonData, 'Stages.json')
+    local ok, data = pcall(mw.loadJsonData, 'Module:Stages.json')
     if not ok or type(data) ~= 'table' then
-        local title = mw.title.new('Stages.json')
+        local title = mw.title.new('Module:Stages.json')
         if not title or not title.exists then
             return nil
         end
@@ -84,7 +84,7 @@ end
 local function stageResult(frame, key)
     local data = loadStages()
     if not data then
-        return '错误：无法加载 [[Stages.json]]'
+        return '错误：无法加载 [[Module:Stages.json]]'
     end
     for _, stage in ipairs(data) do
         if matchStage(stage, key) then
@@ -142,7 +142,7 @@ end
 local function enemyResult(key)
     local lookup = loadMonsterLookup()
     if not lookup then
-        return '错误：无法从 [[Stages.json]] 加载怪物登场数据。'
+        return '错误：无法从 [[Module:Stages.json]] 加载怪物登场数据。'
     end
     local monster = lookup[key] or lookup[key:lower()]
     if not monster then
@@ -191,7 +191,7 @@ end
 local function allEnemyResult()
     local monsters = loadMonsters()
     if not monsters then
-        return '错误：无法从 [[Stages.json]] 加载怪物登场数据。'
+        return '错误：无法从 [[Module:Stages.json]] 加载怪物登场数据。'
     end
     return allEnemyTable(monsters)
 end

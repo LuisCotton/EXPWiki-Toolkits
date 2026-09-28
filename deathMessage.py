@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NS = "mvz2:"
-WIKI_JSON_TITLE = "DeathMessage.json"
+WIKI_JSON_TITLE = "Module:DeathMessage.json"
 
 
 def short(value):

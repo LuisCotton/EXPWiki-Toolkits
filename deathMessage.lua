@@ -7,9 +7,9 @@ local function loadData()
         return dataCache
     end
 
-    local ok, data = pcall(mw.loadJsonData, 'DeathMessage.json')
+    local ok, data = pcall(mw.loadJsonData, 'Module:DeathMessage.json')
     if not ok or type(data) ~= 'table' then
-        local title = mw.title.new('DeathMessage.json')
+        local title = mw.title.new('Module:DeathMessage.json')
         if not title or not title.exists then
             return nil
         end

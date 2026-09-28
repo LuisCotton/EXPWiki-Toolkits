@@ -6,9 +6,9 @@ local function loadData()
     if dataCache then
         return dataCache
     end
-    local ok, data = pcall(mw.loadJsonData, 'Spawns.json')
+    local ok, data = pcall(mw.loadJsonData, 'Module:Spawns.json')
     if not ok or type(data) ~= 'table' then
-        local title = mw.title.new('Spawns.json')
+        local title = mw.title.new('Module:Spawns.json')
         if not title or not title.exists then
             return nil
         end
@@ -187,7 +187,7 @@ end
 function p.getSpawns(frame)
     local data = loadData()
     if not data then
-        return '错误：无法加载 [[Spawns.json]]'
+        return '错误：无法加载 [[Module:Spawns.json]]'
     end
 
     local args, parent = mergedArgs(frame)

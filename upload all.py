@@ -26,7 +26,7 @@ def is_converter_script(path: Path) -> bool:
 
 
 def discover_scripts():
-    return sorted(path for path in BASE_DIR.glob("*.py") if is_converter_script(path))
+    return sorted(path for path in BASE_DIR.glob("*.py") if is_converter_script(path)) + sorted(BASE_DIR.glob("*.lua"))
 
 
 def load_module(path: Path):
@@ -41,6 +41,13 @@ def load_module(path: Path):
 
 
 def run_script(path: Path):
+    if path.suffix.lower() == ".lua":
+        title = "Module:" + path.stem
+        text = path.read_text(encoding="utf-8-sig")
+        login.upload_text(title, text, f"via {path.name}")
+        print(f"上传成功：{title}")
+        return title
+
     module = load_module(path)
     title = getattr(module, "WIKI_JSON_TITLE", None) or getattr(module, "WIKI_TITLE", "未知 JSON 页面")
     convert = getattr(module, "convert", None)

@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NS = "mvz2:"
-WIKI_JSON_TITLE = "Spawns.json"
+WIKI_JSON_TITLE = "Module:Spawns.json"
 SPECIAL_NAMES = {
     "undead_flying_object_blitz": "不死飞行物（飞碟闪电战）",
 }

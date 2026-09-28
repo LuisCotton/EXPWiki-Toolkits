@@ -11,7 +11,7 @@ TALKS_DIR = os.path.join(METAS_DIR, "talks")
 CHARACTERS_PATH = os.path.join(METAS_DIR, "talkcharacters.xml")
 MUSICS_PATH = os.path.join(METAS_DIR, "musics.xml")
 NS = "mvz2:"
-WIKI_JSON_TITLE = "Talk.json"
+WIKI_JSON_TITLE = "Module:Talk.json"
 
 CHAPTERS = {
     "prologue": "序章",
