@@ -131,12 +131,12 @@ end
 local function enemyText(monster)
     local result = {}
     for _, group in ipairs(monster.stagesByCategory or {}) do
-        if #(group.stages or {}) > 0 then
+        if group.stages and group.stages[1] ~= nil then
             table.insert(result, enemyGroupText(group))
         end
     end
     if #result == 0 then return nil end
-    return table.concat(result, '\n')
+    return table.concat(result, '<br>')
 end
 
 local function enemyResult(key)
@@ -160,7 +160,7 @@ local function compactEnemyGroupText(group)
     for _, stage in ipairs(group.stages or {}) do
         table.insert(links, '[[' .. stage.link .. ']]')
     end
-    return "'''" .. group.category .. "'''：" .. table.concat(links, '<br>')
+    return "'''" .. group.category .. "'''：" .. table.concat(links, '、')
 end
 
 local function allEnemyTable(monsters)
@@ -172,7 +172,7 @@ local function allEnemyTable(monsters)
     for _, monster in ipairs(monsters) do
         local cells = {}
         for _, category in ipairs(monster.stagesByCategory or {}) do
-            if #(category.stages or {}) > 0 then
+            if category.stages and category.stages[1] ~= nil then
                 table.insert(cells, compactEnemyGroupText(category))
             end
         end

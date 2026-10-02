@@ -1,6 +1,5 @@
 import importlib.util
 import sys
-import traceback
 from pathlib import Path
 
 import login
@@ -45,7 +44,6 @@ def run_script(path: Path):
         title = "Module:" + path.stem
         text = path.read_text(encoding="utf-8-sig")
         login.upload_text(title, text, f"via {path.name}")
-        print(f"上传成功：{title}")
         return title
 
     module = load_module(path)
@@ -54,16 +52,10 @@ def run_script(path: Path):
     if not callable(convert):
         raise RuntimeError(f"{path.name} 没有可调用的 convert 函数")
 
-    print("=" * 60)
-    print(f"脚本：{path.name}")
-    print(f"目标：{title}")
-    print("=" * 60)
-
     text = convert()
     if not isinstance(text, str):
         raise RuntimeError(f"{path.name} 的 convert() 必须返回字符串")
     login.upload_text(title, text, f"via {path.name}")
-    print(f"上传成功：{title}")
     return title
 
 
@@ -71,13 +63,10 @@ def main():
     scripts = discover_scripts()
 
     if not scripts:
-        print("没有发现可运行的上传脚本。")
-        print("脚本需要定义 WIKI_JSON_TITLE 或 WIKI_TITLE，以及 convert()。")
+        print("失败：没有发现可上传的文件。")
+        print("成功：0")
+        print("失败：0")
         return 1
-
-    print("将运行以下脚本：")
-    for path in scripts:
-        print(" - " + path.name)
 
     ok = []
     failed = []
@@ -85,18 +74,13 @@ def main():
         try:
             title = run_script(path)
             ok.append((path.name, title))
+            print(f"成功：{path.name} -> {title}")
         except Exception as error:
             failed.append((path.name, error))
-            print(f"失败：{path.name}: {error}")
-            traceback.print_exc()
+            print(f"失败：{path.name} -> {error}")
 
-    print("=" * 60)
-    print("执行汇总")
-    print("=" * 60)
-    for name, title in ok:
-        print(f"成功：{name} -> {title}")
-    for name, error in failed:
-        print(f"失败：{name} -> {error}")
+    print(f"成功：{len(ok)}")
+    print(f"失败：{len(failed)}")
 
     return 1 if failed else 0
 
