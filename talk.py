@@ -21,6 +21,7 @@ CHAPTERS = {
     "mausoleum": "梦殿大祀庙",
     "ship": "圣辇船",
     "palace": "地灵殿",
+    "mountain": "妖怪之山",
 }
 
 

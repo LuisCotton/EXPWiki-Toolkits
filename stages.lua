@@ -45,8 +45,6 @@ local function keyOf(frame)
     return key
 end
 
--- 去掉 <color=...> 标记和结尾的消歧义括号，与 stages.py 的 clean_wiki_name 保持一致。
--- {{PAGENAME}} 传进来的是纯文本，而 JSON 里若残留标记就会匹配不上，两边都清洗最稳。
 local function cleanWikiName(value)
     local text = tostring(value or '')
     text = text:gsub('</?color[^>]*>', '')

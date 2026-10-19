@@ -9,8 +9,9 @@ local chapterPages = {
     ['梦境世界/剧情'] = 'dream',
     ['辉针城/剧情'] = 'castle',
     ['梦殿大祀庙/剧情'] = 'mausoleum',
-    ['地灵殿/剧情'] = 'palace',
     ['圣辇船/剧情'] = 'ship',
+    ['地灵殿/剧情'] = 'palace',
+    ['妖怪之山/剧情'] = 'mountain',
 }
 
 local function loadData()

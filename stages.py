@@ -33,18 +33,7 @@ MODE_ORDER = {
     "minigame": 9000, "puzzle": 9500, "puzzle_endless": 9500,
     "endless": 9800, "boss_endless": 9800, "special": 9900,
 }
-# 不需要排除任何关卡。
-#
-# 曾经这里维护过一份「wiki 上还没有页面」的排除清单，现已移除：
-#   * 红链不是错误。[[万圣夜无尽]] 指向不存在的页面时，MediaWiki 按惯例渲染成红链，
-#     不会报错，反而正好提示这些页面待补全。
-#   * 那份清单需要人工跟着页面创建进度同步，很容易过期；实际也确实漏掉了新建的页面。
-#   * 更关键的是：被排除的关卡如果确实有出怪数据，排除就等于让怪物的「登场关卡」
-#     变少，数据与游戏 XML 不符。图鉴数据应当忠实反映 XML。
-#   * debug / i_zombie_debug 本来就没有 <spawns>，不会进入怪物统计，无需特殊处理。
-#
-# 如果将来确实有某个关卡不该出现在怪物列表里（例如纯调试用），
-# 再把它的 id 加进这个集合即可。
+
 EXCLUDED_STAGE_IDS = set()
 NAME_ALIASES = {"emperor": "皇帝僵尸"}
 SPECIAL_NO_ICON_SPAWNS = {
@@ -131,10 +120,6 @@ def stage_records(stages, entity_names, display_names):
     records = []
     for stage in stages:
         spawns = stage.find("spawns")
-        # name / displayName 也必须过 clean_wiki_name：部分关卡在 XML 里是
-        # name="&lt;color=red&gt;无限科学怪人&lt;/color&gt;"，直接用会把这个
-        # 标记带进 JSON，导致 {{#invoke:Stages|getStages|无限科学怪人}} 匹配不上
-        # （{{PAGENAME}} 给的是纯文本）。stage_link() 本来就已经清洗过。
         records.append(compact_dict({
             "id": stage.get("id"),
             "name": clean_wiki_name(stage.get("name")),
