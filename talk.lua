@@ -49,13 +49,14 @@ local function escapeTemplateText(value)
     return text
 end
 
-local function dialogue(style, speaker, text)
+local function dialogue(style, speaker, speakerName, text)
     return string.format(
-        '{{%s|style=%s|%s|%s}}',
+        '{{%s|style=%s|%s|%s%s}}',
         templateName,
         tostring(style or 1),
         escapeTemplateText(speaker),
-        escapeTemplateText(text)
+        escapeTemplateText(text),
+        trim(speakerName) ~= '' and '|speakerName=' .. escapeTemplateText(speakerName) or ''
     )
 end
 
@@ -114,7 +115,12 @@ local function renderSection(section)
         if trim(sentence.description) ~= '' then
             table.insert(result, event(sentence.description))
         end
-        table.insert(result, dialogue(sentence.style, sentence.name or sentence.speaker, sentence.text))
+        table.insert(result, dialogue(
+            sentence.style,
+            sentence.name or sentence.speaker,
+            sentence.speakerName,
+            sentence.text
+        ))
     end
     return table.concat(result, '\n')
 end
@@ -128,7 +134,7 @@ local function renderGroup(group, showTitle)
     table.insert(result, sectionTag('begin', name))
     local music = bgmName(group.music)
     if music ~= '' then
-        table.insert(result, bgmEvent('BGM：' .. music))
+        table.insert(result, bgmEvent(music))
     end
     for _, section in ipairs(group.sections or {}) do
         local text = renderSection(section)

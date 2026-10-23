@@ -136,9 +136,18 @@ def parse_section(section, names, defaults):
     for sentence in section.findall("./sentences/sentence"):
         speaker_id = short(sentence.get("speaker", ""))
         side = local_sides.get(speaker_id) or defaults.get(speaker_id, "left")
+        speaker_name = clean_text(sentence.get("speakerName"))
+        default_name = names.get(speaker_id, speaker_id or "？？？")
+        has_named_speaker = bool(speaker_id and speaker_id != "none")
+        override_name = (
+            f"{speaker_name}（{default_name}）"
+            if has_named_speaker and speaker_name and speaker_name != default_name
+            else speaker_name
+        )
         sentences.append(compact_dict({
             "speaker": speaker_id,
-            "name": names.get(speaker_id, speaker_id or "？？？"),
+            "name": default_name if has_named_speaker else (speaker_name or default_name),
+            "speakerName": override_name if override_name and override_name != default_name else None,
             "side": side,
             "style": style_for(side),
             "text": sentence_text(sentence),
