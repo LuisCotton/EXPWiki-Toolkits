@@ -75,8 +75,7 @@ def entity_extra(entry):
 
 
 def convert():
-    source_path = os.path.join(BASE_DIR, "metas", "spawns.xml")
-    root = ET.parse(source_path).getroot()
+    root = ET.parse(os.path.join(BASE_DIR, "metas", "spawns.xml")).getroot()
     entity_names = load_entity_names()
     entries = []
 
