@@ -47,7 +47,7 @@ function p.getCurses(frame)
     for _, curse in ipairs(data) do
         if type(curse) == 'table' then
             table.insert(result, '|-')
-            table.insert(result, '| ' .. tableText(curse.name) .. ' || ' .. tableText(curse.effect))
+            table.insert(result, '| [[' .. tableText(curse.name) .. ']] || ' .. tableText(curse.effect))
         end
     end
 

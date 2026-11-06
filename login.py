@@ -1,4 +1,6 @@
 import json
+import mimetypes
+import secrets
 import urllib.parse
 import urllib.request
 from http.cookiejar import CookieJar
@@ -6,7 +8,35 @@ from pathlib import Path
 
 
 URL = "https://mvz2expand.wiki.gg/zh/api.php"
+EN_URL = "https://mvz2expand.wiki.gg/api.php"
 ACCOUNT_PATH = Path(__file__).with_name("account.txt")
+
+
+def encode_multipart(fields, files):
+    boundary = "----PythonMediaWikiBoundary" + secrets.token_hex(16)
+    body = bytearray()
+
+    def add_line(line=b""):
+        body.extend(line)
+        body.extend(b"\r\n")
+
+    for key, value in fields.items():
+        add_line(("--" + boundary).encode("utf-8"))
+        add_line(f'Content-Disposition: form-data; name="{key}"'.encode("utf-8"))
+        add_line()
+        add_line(str(value).encode("utf-8"))
+
+    for field, (filename, file_obj, content_type) in files.items():
+        content_type = content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        add_line(("--" + boundary).encode("utf-8"))
+        add_line(f'Content-Disposition: form-data; name="{field}"; filename="{filename}"'.encode("utf-8"))
+        add_line(f"Content-Type: {content_type}".encode("utf-8"))
+        add_line()
+        body.extend(file_obj.read())
+        add_line()
+
+    add_line(("--" + boundary + "--").encode("utf-8"))
+    return bytes(body), f"multipart/form-data; boundary={boundary}"
 
 
 def load_accounts():
@@ -23,12 +53,18 @@ class MwApi:
         self.current_account = None
         self.csrf_token = None
 
-    def request(self, values):
+    def request(self, values, files=None):
         payload = {"format": "json", "formatversion": "2", **values}
+        headers = {"User-Agent": "MVZ2-Json-Uploader/1.0"}
+        if files:
+            data, content_type = encode_multipart(payload, files)
+            headers["Content-Type"] = content_type
+        else:
+            data = urllib.parse.urlencode(payload).encode("utf-8")
         request = urllib.request.Request(
             self.url,
-            data=urllib.parse.urlencode(payload).encode("utf-8"),
-            headers={"User-Agent": "MVZ2-Json-Uploader/1.0"},
+            data=data,
+            headers=headers,
         )
         with self.opener.open(request, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8-sig"))
@@ -71,15 +107,31 @@ class MwApi:
         self.csrf_token = token
         return token
 
-    def post_with_token(self, values):
+    def post_with_token(self, values, files=None):
         if self.csrf_token is None:
             self.get_token()
         data = {**values, "token": self.csrf_token}
-        result = self.request(data)
+        result = self.request(data, files=files)
         if result.get("error", {}).get("code") == "badtoken":
             data["token"] = self.get_token()
-            result = self.request(data)
+            if files:
+                for _, file_obj, _ in files.values():
+                    file_obj.seek(0)
+            result = self.request(data, files=files)
         return result
+
+    def upload_file(self, filename, file_obj, text, comment, ignorewarnings=False):
+        values = {
+            "action": "upload",
+            "filename": filename,
+            "comment": comment,
+            "text": text,
+            "assert": "user",
+            "watchlist": "nochange",
+        }
+        if ignorewarnings:
+            values["ignorewarnings"] = "1"
+        return self.post_with_token(values, files={"file": (filename, file_obj, None)})
 
     def upload_text(self, title, text, summary):
         edit = self.post_with_token({
@@ -95,6 +147,7 @@ class MwApi:
 
 
 api = MwApi()
+en_api = MwApi(EN_URL)
 
 
 def upload_text(title, text, summary):
